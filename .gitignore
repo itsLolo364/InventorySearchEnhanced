@@ -1,0 +1,21 @@
+# Build outputs
+build/
+out/
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# Build/log noise
+*.log
+hs_err_pid*
+*.hprof
+
+# Java/Gradle local state
+.gradle/
+.idea/
+*.iml
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.tmp
+*~

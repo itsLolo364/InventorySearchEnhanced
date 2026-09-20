@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "com.aldomoretti.inventorysearch.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "AbstractContainerScreenMixin",
+    "KeyboardHandlerMixin",
+    "ScreenAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

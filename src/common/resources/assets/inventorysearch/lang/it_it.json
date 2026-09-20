@@ -1,0 +1,6 @@
+{
+  "inventorysearch.search.placeholder": "Cerca item...",
+  "inventorysearch.search.clear": "Cancella ricerca",
+  "inventorysearch.search.none": "Nessun risultato",
+  "inventorysearch.search.found": "%1$s trovati (%2$s contenitori)"
+}

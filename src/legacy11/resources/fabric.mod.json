@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "inventorysearch",
+  "version": "${version}",
+  "name": "Inventory Search",
+  "description": "Cerca item nel tuo inventario e nelle shulker box, casse, zaini e altri contenitori.",
+  "authors": [
+    "AldoMoretti"
+  ],
+  "license": "MIT",
+  "icon": "assets/inventorysearch/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.aldomoretti.inventorysearch.InventorySearchMod"
+    ]
+  },
+  "mixins": [
+    "inventorysearch.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": "${loaderRange}",
+    "minecraft": "${minecraftRange}",
+    "java": "${javaRange}",
+    "fabric-api": "*"
+  }
+}

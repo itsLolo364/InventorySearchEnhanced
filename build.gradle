@@ -1,0 +1,184 @@
+plugins {
+	id 'base'
+	id 'net.fabricmc.fabric-loom' version '1.17.21' apply false
+	id 'net.fabricmc.fabric-loom-remap' version '1.17.21' apply false
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = 'inventory-search-enhanced'
+}
+
+// ---- Version profiles ---------------------------------------------------
+// Selezione versione (per priorità):
+//   -PmcVersion=26.1.2    (su Windows cmd/PS usare le quote: "-PmcVersion=26.1.2")
+//   - gradle.properties  (mcVersion)
+def mcVersion = providers.gradleProperty("mcVersion")
+		.getOrElse("26.1.2")
+
+def profiles = [
+	"1.21.8": [
+		loader: "0.16.14",
+		fabric_api: "0.136.1+1.21.8",
+		sbt: "5.2.12+1.21.8",
+		java: 21,
+		mappings: "officials",
+		codebase: ["legacy"],
+		integration: "sbt-legacy",
+		minecraftRange: ">=1.21.8 <26.1",
+		loaderRange: ">=0.16.0",
+		javaRange: ">=21",
+	],
+	"1.21.11": [
+		loader: "0.17.3",
+		fabric_api: "0.141.6+1.21.11",
+		sbt: "5.2.16+1.21.11",
+		java: 21,
+		mappings: "officials",
+		codebase: ["legacy11"],
+		integration: "sbt-legacy11",
+		minecraftRange: ">=1.21.8 <26.1",
+		loaderRange: ">=0.16.0",
+		javaRange: ">=21",
+	],
+	"26.1": [
+		loader: "0.19.5",
+		fabric_api: "0.140.3+26.1",
+		sbt: "5.2.18+26.1",
+		java: 25,
+		mappings: "none",
+		codebase: ["modern"],
+		integration: "modern-sbt-old",
+		minecraftRange: ">=26.1 <26.2",
+		loaderRange: ">=0.19.0",
+		javaRange: ">=25",
+	],
+	"26.1.1": [
+		loader: "0.19.5",
+		fabric_api: "0.145.4+26.1.1",
+		sbt: "5.4.0+26.1.1",
+		java: 25,
+		mappings: "none",
+		codebase: ["modern"],
+		integration: "sbt-modern",
+		minecraftRange: ">=26.1 <26.2",
+		loaderRange: ">=0.19.0",
+		javaRange: ">=25",
+	],
+	"26.1.2": [
+		loader: "0.19.5",
+		fabric_api: "0.155.3+26.1.2",
+		sbt: "5.4.0+26.1.1",
+		java: 25,
+		mappings: "none",
+		codebase: ["modern"],
+		integration: "sbt-modern",
+		minecraftRange: ">=26.1 <26.2",
+		loaderRange: ">=0.19.0",
+		javaRange: ">=25",
+	],
+]
+
+def profile = profiles[mcVersion]
+if (profile == null) {
+	throw new GradleException("mcVersion '${mcVersion}' non supportato. Valori validi: ${profiles.keySet().join(', ')}")
+}
+
+// Minecraft 26.1+ non-ofuscato usa il plugin loom "puro";
+// 1.21.x ofuscato usa fabric-loom-remap (gestisce le mapping).
+if (profile.codebase.any { it.startsWith("legacy") }) {
+	apply plugin: 'net.fabricmc.fabric-loom-remap'
+} else {
+	apply plugin: 'net.fabricmc.fabric-loom'
+}
+
+repositories {
+	maven {
+		name = 'Fabric'
+		url = 'https://maven.fabricmc.net/'
+	}
+	maven {
+		name = 'MisterPeModder'
+		url = 'https://maven.misterpemodder.com/libs-release/'
+	}
+	mavenCentral()
+}
+
+sourceSets {
+	main {
+		java {
+			srcDir "src/common/java"
+			profile.codebase.each { c ->
+				srcDir "src/${c}/java"
+			}
+			srcDir "src/${profile.integration}/java"
+		}
+		resources {
+			srcDir "src/common/resources"
+			profile.codebase.each { c ->
+				srcDir "src/${c}/resources"
+			}
+		}
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${mcVersion}"
+
+	if (profile.mappings == "officials") {
+		// 1.21.x usa le official Mojang mappings
+		mappings loom.officialMojangMappings()
+	}
+
+	if (profile.codebase.any { it.startsWith("legacy") }) {
+		// Legacy: le dipendenze vanno remappate alle official mappings.
+		modImplementation "net.fabricmc:fabric-loader:${profile.loader}"
+		modImplementation "net.fabricmc.fabric-api:fabric-api:${profile.fabric_api}"
+	} else {
+		// Modern: Minecraft 26.1+ è non-ofuscato, nessun remap necessario.
+		implementation "net.fabricmc:fabric-loader:${profile.loader}"
+		implementation "net.fabricmc.fabric-api:fabric-api:${profile.fabric_api}"
+	}
+
+	// ShulkerBoxTooltip API
+	if (profile.codebase.any { it.startsWith("legacy") }) {
+		modCompileOnly("com.misterpemodder:shulkerboxtooltip-fabric:${profile.sbt}") {
+			transitive = false
+		}
+	} else {
+		compileOnly("com.misterpemodder:shulkerboxtooltip-fabric:${profile.sbt}") {
+			transitive = false
+		}
+	}
+}
+
+processResources {
+	inputs.property "version", version
+	inputs.property "minecraftRange", profile.minecraftRange
+	inputs.property "loaderRange", profile.loaderRange
+	inputs.property "javaRange", profile.javaRange
+
+	filesMatching("fabric.mod.json") {
+		expand "version": version,
+				"minecraftRange": profile.minecraftRange,
+				"loaderRange": profile.loaderRange,
+				"javaRange": profile.javaRange
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.encoding = "UTF-8"
+	it.options.release = profile.java
+}
+
+java {
+	withSourcesJar()
+}
+
+jar {
+	from("LICENSE") {
+		rename { "${it}_${base.archivesName.get()}" }
+	}
+}
